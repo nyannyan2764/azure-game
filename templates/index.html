@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GAME: HORAFUKI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+JP:wght@400;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* --- 豪華デザインシステム --- */
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-yellow: #ffee00;
+            --glass-bg: rgba(16, 20, 40, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --bg-dark: #050510;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-dark);
+            color: #ffffff;
+            overflow-x: hidden;
+            height: 100vh;
+            position: fixed;
+            width: 100%;
+        }
+
+        /* --- サイバー背景アニメーション --- */
+        .cyber-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 200%;
+            background: 
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
+            animation: moveGrid 20s linear infinite;
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        .cyber-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(20, 30, 80, 0.5), #000000);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        @keyframes moveGrid {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0) translateZ(-200px); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(40px) translateZ(-200px); }
+        }
+
+        /* --- スクロールバー --- */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.5); }
+        ::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 3px; box-shadow: 0 0 10px var(--neon-blue); }
+
+        /* --- ガラスモーフィズム強化版 --- */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 
+                0 4px 30px rgba(0, 0, 0, 0.5),
+                inset 0 0 20px rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .glass::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -50%; width: 200%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.03), transparent);
+            transform: skewX(-25deg);
+            pointer-events: none;
+        }
+
+        /* .glass-panel は削除し、HTML側にクラスを記述します */
+
+        /* --- タイポグラフィ --- */
+        .font-cyber { font-family: 'Orbitron', sans-serif; letter-spacing: 0.05em; }
+        .font-impact { font-family: 'Black Ops One', cursive; }
+
+        .neon-text {
+            color: #fff;
+            text-shadow: 
+                0 0 5px #fff,
+                0 0 10px #fff,
+                0 0 20px var(--neon-blue),
+                0 0 40px var(--neon-blue);
+        }
+        .neon-text-red {
+            color: #fff;
+            text-shadow: 
+                0 0 5px #fff,
+                0 0 10px #fff,
+                0 0 20px #ff0055,
+                0 0 40px #ff0055;
+        }
+        .neon-text-yellow {
+            color: #fff;
+            text-shadow: 
+                0 0 5px #fff,
+                0 0 10px #fff,
+                0 0 20px var(--neon-yellow),
+                0 0 40px var(--neon-yellow);
+        }
+
+        /* --- ボタンデザイン --- */
+        .btn-cyber {
+            background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.2), transparent);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 5px var(--neon-blue), inset 0 0 10px rgba(0, 243, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .btn-cyber:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-blue), inset 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-cyber::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+            transform: rotate(45deg);
+            transition: all 0.3s;
+            opacity: 0;
+        }
+        .btn-cyber:active { transform: scale(0.98); }
+
+        .btn-danger {
+            border-color: #ff0055;
+            color: #ff0055;
+            box-shadow: 0 0 5px #ff0055, inset 0 0 10px rgba(255, 0, 85, 0.1);
+        }
+        .btn-danger:hover {
+            background: #ff0055;
+            color: #fff;
+            box-shadow: 0 0 20px #ff0055;
+        }
+
+        .btn-gold {
+            border-color: var(--neon-yellow);
+            color: var(--neon-yellow);
+            box-shadow: 0 0 5px var(--neon-yellow), inset 0 0 10px rgba(255, 238, 0, 0.1);
+        }
+        .btn-gold:hover {
+            background: var(--neon-yellow);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-yellow);
+        }
+
+        /* --- アニメーション --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+        @keyframes borderPulse {
+            0% { border-color: rgba(255,255,255,0.1); }
+            50% { border-color: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue); }
+            100% { border-color: rgba(255,255,255,0.1); }
+        }
+        .border-pulse { animation: borderPulse 3s infinite; }
+
+        /* --- レイアウト調整 --- */
+        .sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 50; }
+        .sidebar.closed { transform: translateX(-100%); }
+        #main-content { height: 100vh; overflow-y: auto; padding-bottom: 120px; -webkit-overflow-scrolling: touch; }
+
+        /* 入力フォーム */
+        .input-cyber {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            transition: all 0.3s;
+        }
+        .input-cyber:focus {
+            outline: none;
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            background: rgba(0, 243, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-cyan-500 selection:text-black">
+
+    <!-- 背景エフェクト -->
+    <div class="cyber-glow"></div>
+    <div class="cyber-bg"></div>
+
+    <!-- サイドバー -->
+    <div id="sidebar" class="sidebar fixed top-0 left-0 h-full w-80 glass border-r border-gray-700 p-4 flex flex-col closed md:translate-x-0 md:relative md:w-1/4 backdrop-blur-xl">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-cyber text-cyan-300 neon-text"><i class="fas fa-database mr-2"></i>LOGS & DATA</h2>
+            <button onclick="toggleSidebar()" class="md:hidden text-cyan-300 hover:text-white transition">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
+        </div>
+
+        <!-- ルール -->
+        <div class="glass rounded-xl p-5 mb-4 border-t border-l border-white/10 border-b-black/50 border-r-black/50 text-sm border-l-4 border-l-yellow-500">
+            <h3 class="font-bold text-yellow-400 mb-2 font-cyber tracking-widest">RULES</h3>
+            <ul class="list-none space-y-2 text-gray-300 text-xs">
+                <li class="flex items-center"><i class="fas fa-users w-5 text-blue-400"></i> 市民 vs 裏切り者(1名)</li>
+                <li class="flex items-center"><i class="fas fa-user-secret w-5 text-red-400"></i> 裏切り者は「答え」を知る</li>
+                <li class="flex items-center"><i class="fas fa-chart-line w-5 text-green-400"></i> 誤差<span id="rule-threshold" class="text-yellow-300 font-bold mx-1">N</span>%以上で裏切り者得点</li>
+                <li class="flex items-center"><i class="fas fa-gavel w-5 text-purple-400"></i> 最終投票で追放せよ</li>
+            </ul>
+        </div>
+
+        <!-- スコアボード -->
+        <div class="glass rounded-xl p-5 mb-4 border-t border-l border-white/10 border-b-black/50 border-r-black/50 flex-1 overflow-hidden flex flex-col relative">
+            <h3 class="font-bold text-green-400 mb-2 font-cyber tracking-widest">SCOREBOARD</h3>
+            <div id="score-list" class="overflow-y-auto space-y-2 text-sm flex-1 pr-1">
+                <!-- JSで生成 -->
+            </div>
+            <!-- 装飾 -->
+            <div class="absolute bottom-2 right-2 text-[10px] text-gray-600 font-cyber">LIVE DATA</div>
+        </div>
+
+        <!-- チャット/ログ -->
+        <div class="glass rounded-xl p-5 mb-4 border-t border-l border-white/10 border-b-black/50 border-r-black/50 flex-1 flex flex-col mt-4 max-h-60 relative">
+            <h3 class="font-bold text-purple-400 mb-2 font-cyber tracking-widest">SYSTEM LOG</h3>
+            <div id="game-logs" class="overflow-y-auto flex-1 text-xs space-y-2 font-mono pr-1">
+                <!-- ログ -->
+            </div>
+        </div>
+    </div>
+
+    <!-- メインエリア -->
+    <div id="main-content" class="flex-1 relative w-full">
+        
+        <!-- ヘッダー -->
+        <header class="p-4 flex justify-between items-center glass sticky top-0 z-40 mb-8 border-b border-cyan-500/30">
+            <button onclick="toggleSidebar()" class="md:hidden text-cyan-400 btn-cyber px-3 py-1 rounded">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1 class="text-3xl md:text-4xl font-impact italic tracking-wider neon-text mx-auto transform -skew-x-12">HORAFUKI</h1>
+            <div id="my-role-indicator" class="hidden px-4 py-1 rounded border border-white/30 backdrop-blur-md shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                <span class="text-[10px] text-gray-400 block font-cyber">IDENTITY</span>
+                <span id="my-role-text" class="font-bold tracking-widest">???</span>
+            </div>
+        </header>
+
+        <!-- コンテンツコンテナ -->
+        <div class="container mx-auto px-4 max-w-3xl pb-20">
+
+            <!-- 1. ログイン画面 -->
+            <div id="view-login" class="animate-fade-in flex flex-col items-center justify-center min-h-[50vh]">
+                <div class="glass p-10 rounded-2xl w-full max-w-md text-center border-pulse relative">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
+                    <h2 class="text-2xl mb-8 font-cyber tracking-widest text-cyan-300">ACCESS PORTAL</h2>
+                    <div class="mb-6 relative">
+                        <i class="fas fa-user absolute left-4 top-3.5 text-cyan-500"></i>
+                        <input type="text" id="username" placeholder="CODENAME" class="w-full input-cyber rounded p-3 pl-10 text-center text-lg focus:outline-none transition font-bold">
+                    </div>
+                    <button onclick="joinGame()" class="w-full btn-cyber py-4 rounded font-bold text-lg shadow-lg mb-4">
+                        INITIALIZE LINK
+                    </button>
+                    <p class="text-[10px] text-cyan-500/50 mt-4 font-mono tracking-widest">SECURE CONNECTION ESTABLISHED</p>
+                </div>
+            </div>
+
+            <!-- 2. ロビー & 設定 -->
+            <div id="view-lobby" class="hidden animate-fade-in">
+                <div class="glass rounded-xl p-5 mb-4 border-t border-l border-white/10 border-b-black/50 border-r-black/50 relative overflow-visible">
+                    <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-black px-4 text-cyan-400 font-cyber border border-cyan-500/30 text-xs py-1 rounded">LOBBY STATUS: ACTIVE</div>
+                    
+                    <!-- 設定 -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-4">
+                        <div class="bg-black/20 p-3 rounded border border-white/5">
+                            <label class="text-[10px] text-cyan-400 font-cyber block mb-1">TOTAL TURNS</label>
+                            <input type="number" id="set-turns" class="w-full bg-transparent border-b border-gray-600 text-center text-xl font-bold focus:outline-none focus:border-cyan-500 text-white" value="3" onchange="updateSettings()">
+                        </div>
+                        <div class="bg-black/20 p-3 rounded border border-white/5">
+                            <label class="text-[10px] text-pink-400 font-cyber block mb-1">ERROR THRESHOLD (%)</label>
+                            <input type="number" id="set-threshold" class="w-full bg-transparent border-b border-gray-600 text-center text-xl font-bold focus:outline-none focus:border-pink-500 text-white" value="10" onchange="updateSettings()">
+                        </div>
+                        <div class="bg-black/20 p-3 rounded border border-white/5">
+                            <label class="text-[10px] text-yellow-400 font-cyber block mb-1">TRAITOR BONUS (x)</label>
+                            <input type="number" id="set-multiplier" class="w-full bg-transparent border-b border-gray-600 text-center text-xl font-bold focus:outline-none focus:border-yellow-500 text-white" value="2" onchange="updateSettings()">
+                        </div>
+                    </div>
+
+                    <h3 class="text-xs font-bold text-gray-400 mb-3 font-cyber tracking-widest pl-2 border-l-2 border-cyan-500">CONNECTED AGENTS</h3>
+                    <div id="lobby-player-list" class="grid grid-cols-2 gap-3 mb-8">
+                        <!-- プレイヤーリスト -->
+                    </div>
+
+                    <div class="text-center">
+                        <button id="btn-ready" onclick="toggleReady()" class="btn-cyber py-4 px-12 rounded-sm w-full md:w-auto text-xl font-bold clip-path-polygon">
+                            READY TO START
+                        </button>
+                        <p class="text-[10px] text-gray-500 mt-3 font-mono">WAITING FOR ALL SIGNALS...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. ゲーム画面 -->
+            <div id="view-game" class="hidden animate-fade-in">
+                <!-- ターン表示 -->
+                <div class="text-center mb-8 relative">
+                    <div class="inline-block relative">
+                        <span class="absolute -inset-1 rounded-lg bg-cyan-500 blur opacity-25"></span>
+                        <div class="relative bg-black border border-cyan-500/50 px-8 py-2 rounded font-cyber text-2xl tracking-widest text-cyan-300">
+                            TURN <span id="game-turn" class="text-white">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 問題カード -->
+                <div class="glass p-8 rounded-sm mb-8 text-center relative overflow-hidden border-2 border-cyan-500/20 shadow-[0_0_30px_rgba(0,243,255,0.1)]">
+                    <div class="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-cyan-500"></div>
+                    <div class="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-cyan-500"></div>
+                    <div class="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-cyan-500"></div>
+                    <div class="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-cyan-500"></div>
+                    
+                    <h3 class="text-cyan-500/70 text-xs mb-4 font-cyber tracking-[0.3em]">CURRENT OBJECTIVE</h3>
+                    <p id="question-text" class="text-2xl md:text-4xl font-bold leading-relaxed py-4 text-shadow-sm">
+                        Loading Mission Data...
+                    </p>
+                    
+                    <!-- 裏切り者のみ表示される答え -->
+                    <div id="traitor-hint" class="hidden mt-6 bg-red-950/50 border border-red-500/50 p-4 rounded relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-red-500/10 animate-pulse"></div>
+                        <p class="text-red-400 text-[10px] font-bold font-cyber tracking-widest mb-1 relative z-10">⚠ RESTRICTED INTEL ⚠</p>
+                        <p class="text-3xl font-mono text-red-500 neon-text-red relative z-10 font-bold">A: <span id="hint-answer">---</span></p>
+                    </div>
+                </div>
+
+                <!-- ステータス表示 -->
+                <div class="text-center mb-8">
+                    <div class="inline-block bg-black/40 px-6 py-3 rounded-full border border-yellow-500/30 backdrop-blur">
+                        <p class="text-xs text-gray-400 font-cyber mb-1">ACTIVE AGENT</p>
+                        <p id="answerer-name" class="font-bold text-yellow-400 text-3xl neon-text-yellow font-impact tracking-wide">---</p>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-4 font-mono blink-animation">> WAITING FOR DELIBERATION...</p>
+                </div>
+
+                <!-- 回答エリア (回答者のみアクティブ) -->
+                <div id="answer-area" class="glass rounded-xl p-5 mb-4 border-t border-l border-white/10 border-b-black/50 border-r-black/50 hidden border-yellow-500/50 shadow-[0_0_20px_rgba(255,200,0,0.1)]">
+                    <label class="block text-xs text-yellow-400 mb-2 font-cyber tracking-widest">INPUT SOLUTION</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="answer-input" step="any" class="flex-1 input-cyber rounded p-4 text-2xl text-center font-bold tracking-widest">
+                        <button onclick="submitAnswer()" class="btn-gold px-8 rounded font-bold shadow-lg">
+                            ENTER
+                        </button>
+                    </div>
+                </div>
+
+                <!-- チャットエリア (固定位置) -->
+                <div class="fixed bottom-0 left-0 w-full bg-black/80 border-t border-cyan-900/50 p-3 flex gap-2 z-50 md:static md:bg-transparent md:border-0 md:mt-4 backdrop-blur-md">
+                    <div class="relative flex-1">
+                        <i class="fas fa-terminal absolute left-3 top-3.5 text-gray-500"></i>
+                        <input type="text" id="chat-input" placeholder="Secure Channel..." class="w-full bg-gray-900/80 rounded p-3 pl-9 focus:outline-none border border-gray-700 text-sm text-cyan-100 focus:border-cyan-500 transition">
+                    </div>
+                    <button onclick="sendChat()" class="bg-cyan-900/50 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500 hover:text-black rounded px-5 transition duration-300">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4. 結果画面 (ターン毎) -->
+            <div id="view-result" class="hidden animate-fade-in text-center">
+                <div class="glass p-10 rounded-2xl mb-8 border border-white/10 relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-cyan-500/20 rounded-full blur-3xl"></div>
+                    <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-pink-500/20 rounded-full blur-3xl"></div>
+                    
+                    <h2 class="text-4xl font-black mb-6 neon-text font-impact tracking-widest italic">RESULT</h2>
+                    
+                    <div class="mb-8 p-4 bg-black/20 rounded border border-white/5">
+                        <p class="text-[10px] text-gray-400 font-cyber mb-2">AGENT RESPONSE</p>
+                        <p class="text-5xl font-black text-white my-2 tracking-tighter" id="res-answer">---</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div class="bg-black/30 p-4 rounded border-l-2 border-green-500">
+                            <p class="text-[10px] text-green-400 font-cyber mb-1">TRUE VALUE</p>
+                            <p class="text-2xl font-bold font-mono text-green-300" id="res-correct">---</p>
+                        </div>
+                        <div class="bg-black/30 p-4 rounded border-l-2 border-pink-500">
+                            <p class="text-[10px] text-pink-400 font-cyber mb-1">DEVIATION</p>
+                            <p class="text-2xl font-bold font-mono text-pink-300" id="res-error">---%</p>
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-gradient-to-r from-transparent via-white/5 to-transparent rounded mb-8 border-t border-b border-white/10">
+                        <p class="text-2xl font-bold font-cyber" id="res-winner">---</p>
+                    </div>
+
+                    <button id="btn-next-turn" onclick="nextScene()" class="w-full btn-cyber py-4 rounded font-bold transition text-lg">
+                        PROCEED <span class="text-xs ml-2 opacity-70" id="next-ready-count">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 5. 投票画面 -->
+            <div id="view-vote" class="hidden animate-fade-in">
+                <div class="glass p-8 rounded-2xl text-center border border-red-500/30 shadow-[0_0_50px_rgba(255,0,0,0.1)]">
+                    <h2 class="text-3xl font-bold mb-2 text-red-500 neon-text-red font-impact tracking-widest">JUDGMENT TIME</h2>
+                    <p class="mb-8 text-gray-300 text-sm font-light">Identify the Traitor to secure victory.</p>
+                    
+                    <div id="vote-list" class="grid grid-cols-1 gap-4 max-w-sm mx-auto">
+                        <!-- 投票ボタンリスト -->
+                    </div>
+                    <p id="vote-status" class="mt-6 text-sm text-yellow-400 animate-pulse font-mono">> WAITING FOR VOTE...</p>
+                </div>
+            </div>
+
+            <!-- 6. 最終結果画面 -->
+            <div id="view-final" class="hidden animate-fade-in text-center">
+                <div class="glass p-8 rounded-2xl border-2 border-yellow-500 shadow-[0_0_50px_rgba(255,215,0,0.3)] relative overflow-hidden">
+                    <!-- 紙吹雪用コンテナ -->
+                    <div id="confetti" class="absolute inset-0 pointer-events-none"></div>
+
+                    <h2 class="text-5xl font-black mb-10 neon-text-yellow font-impact tracking-widest">MISSION COMPLETE</h2>
+                    
+                    <div class="mb-10 relative">
+                        <div class="absolute inset-0 bg-red-500/20 blur-xl rounded-full transform scale-75 animate-pulse"></div>
+                        <p class="text-sm font-bold mb-2 text-gray-300 font-cyber relative z-10">THE TRAITOR WAS</p>
+                        <p id="final-traitor" class="text-4xl font-black text-red-500 bg-black/50 inline-block px-8 py-3 rounded border border-red-500/50 relative z-10 neon-text-red">---</p>
+                    </div>
+
+                    <div class="mb-8 text-left max-w-sm mx-auto bg-black/40 p-6 rounded-xl border border-white/10">
+                        <h3 class="text-xs font-bold text-cyan-400 mb-4 font-cyber border-b border-cyan-500/30 pb-2">FINAL RANKING</h3>
+                        <div id="final-scores" class="space-y-3">
+                            <!-- 最終スコア -->
+                        </div>
+                    </div>
+
+                    <button id="btn-reset" onclick="resetGame()" class="w-full btn-danger py-5 rounded font-bold shadow-lg transition text-xl font-cyber">
+                        TERMINATE SESSION <span class="text-sm ml-2" id="reset-count"></span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let mySid = null;
+        let myUid = localStorage.getItem('horafuki_uid');
+        if (!myUid) {
+            myUid = Math.random().toString(36).substring(2) + Date.now().toString(36);
+            localStorage.setItem('horafuki_uid', myUid);
+        }
+
+        let gameState = {};
+
+        // ---------------------------------------------------------
+        // UI操作系
+        // ---------------------------------------------------------
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            sb.classList.toggle('closed');
+        }
+
+        function showView(viewId) {
+            document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        // ---------------------------------------------------------
+        // ソケットイベント
+        // ---------------------------------------------------------
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('your_info', (data) => {
+            mySid = data.sid;
+        });
+
+        socket.on('update_state', (state) => {
+            console.log('State Updated:', state);
+            gameState = state;
+            render(state);
+        });
+
+        // ---------------------------------------------------------
+        // レンダリングロジック
+        // ---------------------------------------------------------
+        function render(state) {
+            if (!state.players[mySid]) {
+                showView('view-login');
+                return;
+            }
+
+            const me = state.players[mySid];
+            
+            // 役割表示
+            const roleSpan = document.getElementById('my-role-text');
+            const roleIndicator = document.getElementById('my-role-indicator');
+            if (me.role === 'traitor') {
+                roleSpan.textContent = "TRAITOR";
+                roleSpan.className = "text-red-500 neon-text-red font-cyber tracking-widest text-lg";
+                roleIndicator.classList.remove('hidden');
+                roleIndicator.classList.add('border-red-500/50', 'bg-red-900/20');
+            } else if (me.role === 'citizen') {
+                roleSpan.textContent = "CITIZEN";
+                roleSpan.className = "text-cyan-300 neon-text font-cyber tracking-widest text-lg";
+                roleIndicator.classList.remove('hidden');
+                roleIndicator.classList.add('border-cyan-500/50', 'bg-cyan-900/20');
+            } else {
+                roleIndicator.classList.add('hidden');
+            }
+
+            switch (state.status) {
+                case 'lobby':
+                    showView('view-lobby');
+                    renderLobby(state);
+                    break;
+                case 'game':
+                    showView('view-game');
+                    renderGame(state);
+                    break;
+                case 'result':
+                    showView('view-result');
+                    renderResult(state);
+                    break;
+                case 'vote':
+                    showView('view-vote');
+                    renderVote(state);
+                    break;
+                case 'final':
+                    showView('view-final');
+                    renderFinal(state);
+                    break;
+            }
+
+            renderSidebar(state);
+        }
+
+        function renderSidebar(state) {
+            document.getElementById('rule-threshold').innerText = state.settings.error_threshold;
+
+            const logDiv = document.getElementById('game-logs');
+            logDiv.innerHTML = '';
+            state.logs.slice().reverse().forEach(log => {
+                const p = document.createElement('div');
+                let colorClass = 'text-cyan-100';
+                let icon = '<i class="fas fa-info-circle text-gray-500 mr-1"></i>';
+                
+                if (log.type === 'system') { colorClass = 'text-gray-400'; icon = '<i class="fas fa-cog text-gray-500 mr-1"></i>'; }
+                else if (log.type === 'important') { colorClass = 'text-red-400 font-bold'; icon = '<i class="fas fa-exclamation-triangle text-red-500 mr-1"></i>'; }
+                else if (log.type === 'result') { colorClass = 'text-yellow-300'; icon = '<i class="fas fa-star text-yellow-500 mr-1"></i>'; }
+                else if (log.type === 'chat') { colorClass = 'text-white'; icon = '<i class="fas fa-comment text-blue-400 mr-1"></i>'; }
+
+                p.className = `p-2 border-b border-gray-700/30 ${colorClass} hover:bg-white/5 transition`;
+                p.innerHTML = `${icon}${log.msg}`;
+                logDiv.appendChild(p);
+            });
+
+            const scoreDiv = document.getElementById('score-list');
+            scoreDiv.innerHTML = '';
+            Object.values(state.players).sort((a,b) => b.score - a.score).forEach(p => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center bg-black/20 p-2 rounded mb-1 border border-white/5 hover:border-cyan-500/30 transition";
+                const connectStatus = p.connected ? '<span class="text-green-500 animate-pulse text-[8px]">●</span>' : '<span class="text-gray-500 text-[8px]">●</span>';
+                
+                let roleIcon = '';
+                if (state.status === 'final') {
+                    roleIcon = p.role === 'traitor' ? '<i class="fas fa-user-secret text-red-500 ml-1"></i>' : '<i class="fas fa-user text-cyan-500 ml-1"></i>';
+                }
+
+                div.innerHTML = `
+                    <span class="font-bold flex items-center gap-2">${connectStatus} ${p.name} ${roleIcon}</span>
+                    <span class="font-mono text-cyan-300">${Math.floor(p.score)}<span class="text-[9px] text-gray-500 ml-0.5">PTS</span></span>
+                `;
+                scoreDiv.appendChild(div);
+            });
+        }
+
+        function renderLobby(state) {
+            document.getElementById('set-turns').value = state.settings.total_turns;
+            document.getElementById('set-threshold').value = state.settings.error_threshold;
+            document.getElementById('set-multiplier').value = state.settings.traitor_multiplier;
+
+            const list = document.getElementById('lobby-player-list');
+            list.innerHTML = '';
+            Object.values(state.players).forEach(p => {
+                const div = document.createElement('div');
+                const readyClass = p.ready ? 'bg-cyan-900/30 border-cyan-500 text-cyan-300' : 'bg-black/40 border-gray-700 text-gray-500';
+                const statusText = p.ready ? 'READY' : 'STANDBY';
+                
+                div.className = `p-3 rounded border ${readyClass} flex justify-between items-center transition-all relative overflow-hidden group`;
+                div.innerHTML = `
+                    <div class="absolute inset-0 bg-white/5 translate-y-full group-hover:translate-y-0 transition duration-300"></div>
+                    <span class="truncate font-bold relative z-10"><i class="fas fa-user-circle mr-2 opacity-50"></i>${p.name}</span>
+                    <span class="text-[10px] font-cyber relative z-10">${statusText}</span>
+                `;
+                list.appendChild(div);
+            });
+
+            const me = state.players[mySid];
+            const btn = document.getElementById('btn-ready');
+            if (me.ready) {
+                btn.innerText = "STATUS: READY";
+                btn.className = "btn-cyber py-4 px-12 rounded-sm w-full md:w-auto text-xl font-bold bg-cyan-500 text-black shadow-[0_0_20px_var(--neon-blue)]";
+            } else {
+                btn.innerText = "INITIATE READY";
+                btn.className = "btn-cyber py-4 px-12 rounded-sm w-full md:w-auto text-xl font-bold";
+            }
+        }
+
+        function renderGame(state) {
+            document.getElementById('game-turn').innerText = `${state.current_turn}/${state.settings.total_turns}`;
+            
+            const qData = state.question;
+            if(qData) {
+                document.getElementById('question-text').innerText = qData.q;
+                
+                const me = state.players[mySid];
+                const hintBox = document.getElementById('traitor-hint');
+                if (me.role === 'traitor') {
+                    hintBox.classList.remove('hidden');
+                    document.getElementById('hint-answer').innerText = qData.a;
+                } else {
+                    hintBox.classList.add('hidden');
+                }
+            }
+
+            const answerer = state.players[state.answerer_sid];
+            document.getElementById('answerer-name').innerText = answerer ? answerer.name : "UNKNOWN";
+
+            const ansArea = document.getElementById('answer-area');
+            if (state.answerer_sid === mySid) {
+                ansArea.classList.remove('hidden');
+                ansArea.classList.add('animate-fade-in');
+            } else {
+                ansArea.classList.add('hidden');
+            }
+        }
+
+        function renderResult(state) {
+            const res = state.last_result;
+            if(res) {
+                document.getElementById('res-answer').innerText = res.answer;
+                document.getElementById('res-correct').innerText = res.correct;
+                document.getElementById('res-error').innerText = res.error.toFixed(1) + '%';
+                
+                const winElem = document.getElementById('res-winner');
+                winElem.innerText = `${res.winner} WINS`;
+                winElem.className = res.winner.includes('裏切り者') 
+                    ? "text-3xl font-black text-red-500 neon-text-red font-impact tracking-wider" 
+                    : "text-3xl font-black text-cyan-400 neon-text font-impact tracking-wider";
+            }
+
+            const readyCount = Object.values(state.players).filter(p => p.round_ready).length;
+            const total = Object.values(state.players).filter(p => p.connected).length;
+            
+            const btn = document.getElementById('btn-next-turn');
+            document.getElementById('next-ready-count').innerText = `${readyCount}/${total}`;
+            
+            if (state.players[mySid].round_ready) {
+                btn.classList.add('opacity-50', 'cursor-not-allowed', 'grayscale');
+                btn.innerText = "WAITING FOR OTHERS...";
+            } else {
+                btn.classList.remove('opacity-50', 'cursor-not-allowed', 'grayscale');
+                btn.innerText = `PROCEED TO NEXT PHASE`;
+                btn.innerHTML += ` <span class="text-xs ml-2 opacity-70">(${readyCount}/${total})</span>`;
+            }
+        }
+
+        function renderVote(state) {
+            const list = document.getElementById('vote-list');
+            list.innerHTML = '';
+            
+            Object.values(state.players).forEach(p => {
+                if (p.uid === myUid) return;
+
+                const btn = document.createElement('button');
+                btn.className = "w-full bg-red-900/20 border border-red-500/50 hover:bg-red-500 hover:text-white text-red-300 font-bold py-4 rounded transition relative overflow-hidden group uppercase tracking-widest";
+                btn.innerHTML = `
+                    <div class="absolute inset-0 bg-red-500/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
+                    <span class="relative z-10">VOTE: ${p.name}</span>
+                `;
+                btn.onclick = () => voteTraitor(p.uid);
+                list.appendChild(btn);
+            });
+            
+            document.getElementById('vote-status').innerText = ">> AWAITING YOUR JUDGMENT...";
+        }
+
+        function renderFinal(state) {
+            const traitor = Object.values(state.players).find(p => p.role === 'traitor');
+            document.getElementById('final-traitor').innerText = traitor ? traitor.name : "UNKNOWN";
+
+            const list = document.getElementById('final-scores');
+            list.innerHTML = '';
+            Object.values(state.players)
+                .sort((a,b) => b.score - a.score)
+                .forEach((p, index) => {
+                    const div = document.createElement('div');
+                    div.className = "flex justify-between p-3 border-b border-gray-700 items-center hover:bg-white/5 transition";
+                    const rankClass = index === 0 ? 'text-yellow-400 font-bold' : 'text-gray-300';
+                    const icon = index === 0 ? '<i class="fas fa-crown text-yellow-400 mr-2"></i>' : `<span class="w-6 inline-block text-center text-gray-600 font-mono">#${index+1}</span>`;
+                    
+                    div.innerHTML = `
+                        <span class="${rankClass}">${icon} ${p.name} <span class="text-[10px] text-gray-500 ml-2 font-mono uppercase">${p.role}</span></span>
+                        <span class="font-bold text-xl font-mono">${Math.floor(p.score)}</span>
+                    `;
+                    list.appendChild(div);
+                });
+
+            const readyCount = Object.values(state.players).filter(p => p.reset_ready).length;
+            const total = Object.values(state.players).filter(p => p.connected).length;
+            const btn = document.getElementById('btn-reset');
+            
+            const countText = `(${readyCount}/${total})`;
+            document.getElementById('reset-count').innerText = countText;
+            
+             if (state.players[mySid].reset_ready) {
+                btn.classList.add('opacity-50', 'cursor-not-allowed', 'grayscale');
+                btn.innerText = "WAITING RESET...";
+            } else {
+                btn.classList.remove('opacity-50', 'cursor-not-allowed', 'grayscale');
+                btn.innerText = "TERMINATE SESSION";
+                btn.innerHTML += ` <span class="text-sm ml-2">${countText}</span>`;
+            }
+        }
+
+        // ---------------------------------------------------------
+        // アクション
+        // ---------------------------------------------------------
+        function joinGame() {
+            const name = document.getElementById('username').value;
+            if (!name) return alert('CODENAME REQUIRED');
+            socket.emit('join_game', { name: name, uid: myUid });
+        }
+
+        function updateSettings() {
+            const turns = document.getElementById('set-turns').value;
+            const threshold = document.getElementById('set-threshold').value;
+            const multiplier = document.getElementById('set-multiplier').value;
+            socket.emit('update_settings', { turns, threshold, multiplier });
+        }
+
+        function toggleReady() { socket.emit('toggle_ready'); }
+
+        function sendChat() {
+            const input = document.getElementById('chat-input');
+            if (input.value.trim()) {
+                socket.emit('chat_message', { msg: input.value });
+                input.value = '';
+            }
+        }
+
+        function submitAnswer() {
+            const val = document.getElementById('answer-input').value;
+            if (val === "") return;
+            socket.emit('submit_answer', { answer: val });
+        }
+
+        function nextScene() { socket.emit('next_scene'); }
+
+        function voteTraitor(targetUid) {
+            if(confirm("CONFIRM SUSPECT IDENTIFICATION?\n(Cannot be undone)")) {
+                socket.emit('vote_traitor', { target_uid: targetUid });
+                document.getElementById('vote-list').innerHTML = '<p class="text-center text-gray-400 font-mono animate-pulse">>> VOTE REGISTERED. STANDBY...</p>';
+            }
+        }
+
+        function resetGame() {
+            if(confirm("TERMINATE SESSION AND RESET SYSTEM?")) {
+                socket.emit('reset_game');
+            }
+        }
+    </script>
+</body>
+</html>
